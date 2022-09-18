@@ -36,58 +36,40 @@ def readFile(filename):
 
 
 # parse a list into LIST OF CLASS PROBLEMS
-def getProblems(equation_list, numProblems):
+def getProblems(equation_list):
 
-    probList = list()
+    problemList = list()
 
-    # initialize class loop
+    # initialize readings
     celems = equation_list[0].split(" ")
     pelems = equation_list[1].split(" ")
+    currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
 
-    init = Problem(int(celems[1]), int(celems[2]), int(pelems[2]), int(pelems[3]), celems[3])
+    for counter in range(2, len(equation_list)):
 
-    # loop through list and parse
-    counter = 0
-    while counter < len(equation_list):
+        # if equation list at counter starts with c, reset
+        if equation_list[counter][0] == 'c':
+           
+            problemList.append(currProblem)
+            celems = equation_list[counter].split(" ")
+            currProblem = Problem(int(celems[1]), int(celems[2]), -1, -1, celems[3])
 
-        celems = equation_list[counter].split(" ")
-        counter += 1
-        pelems = equation_list[counter].split(" ")
-        counter += 1
+        # if starts with p, set all other class elements
+        elif equation_list[counter][0] == 'p':
 
-        init = Problem(int(celems[1]), int(celems[2]), int(pelems[2]), int(pelems[3]), celems[3])
+            pelems = equation_list[counter].split(" ")
+            currProblem.numVariables = int(pelems[2])
+            currProblem.numClauses = int(pelems[3])
 
-        # read in problem array
-        while counter < counter+init.numClauses:
+        else: 
 
-            app_clause = list()
+            # append equation to list
+            eq = equation_list[counter].split(",")
+            for i in range(0, len(eq)):
+                eq[i] = int(eq[i])
+            currProblem.probArray.append(eq)
 
-            # get clause
-            clause_in = equation_list[counter].split(",")
-            counter += 1
+    # append last problem to list
+    problemList.append(currProblem)
 
-            # append everything to clause, EXCEPT FOR ZERO
-            for i in range(0, len(clause_in)-1):
-                app_clause.append(int(clause_in[i]))
-
-            # If length of clause is less than the maxLiterals + 1, append with zeros
-            if len(clause_in) < init.maxLiterals + 1:
-                for i in range(len(clause_in), init.maxLiterals+1):
-                    app_clause.append(0)
-
-            # append to current problem class
-            init.probArray.append(app_clause)
-
-        # append class problem to list
-        probList.append(init)
-
-    return probList
-
-
-
-# initialize brute force
-equation_list, numProblems = readFile("../tests/kSAT.txt")
-probList = getProblems(equation_list, numProblems)
-
-# c, problem number, max literals in a clause, answer
-# p, cnf, number of variables, number of clauses
+    return problemList
