@@ -57,3 +57,21 @@ def getProblems(filename):
     problemList.append(currProblem)
 
     return problemList
+
+
+
+# function that generates the next assignment of variables
+# currProblem is a Problem object
+# attemptNumber is an integer
+# returns an array of integers that represent the assignments
+def generateAssignment(currProblem, attemptNumber):
+
+    binString = bin(attemptNumber)
+    A = str(A)
+    for i in range(0, len(A)):
+        print(A[i])
+    print(A)
+    return
+
+test = Problem(0, 0, 0, 0, 0)
+generateAssignment(Problem, 0)
