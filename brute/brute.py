@@ -66,12 +66,18 @@ def getProblems(filename):
 # returns an array of integers that represent the assignments
 def generateAssignment(currProblem, attemptNumber):
 
-    binString = bin(attemptNumber)
-    A = str(A)
-    for i in range(0, len(A)):
-        print(A[i])
-    print(A)
-    return
+    # get binary representation in a string form
+    binString = str(bin(attemptNumber))[2:]
 
-test = Problem(0, 0, 0, 0, 0)
-generateAssignment(Problem, 0)
+    # make binary string same length as num variables
+    temp = ""
+    for i in range(0, currProblem.numVariables - len(binString)):
+        temp += '0'
+    binString = temp + binString
+
+    # convert string to array of ints
+    varList = list()
+    for char in binString:
+        varList.append(int(char))
+
+    return varList
