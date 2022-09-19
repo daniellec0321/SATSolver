@@ -2,10 +2,10 @@
 class Problem:
 
     def __init__(self, probNumber_in, maxLiterals_in, numVariables_in, numClauses_in, answer_in):
-        self.probNumber = probNumber_in
-        self.maxLiterals = maxLiterals_in
-        self.numVariables = numVariables_in
-        self.numClauses = numClauses_in
+        self.probNumber = int(probNumber_in)
+        self.maxLiterals = int(maxLiterals_in)
+        self.numVariables = int(numVariables_in)
+        self.numClauses = int(numClauses_in)
         self.answer = answer_in
         self.probArray = list()
 
@@ -81,3 +81,45 @@ def generateAssignment(currProblem, attemptNumber):
         varList.append(int(char))
 
     return varList
+
+
+
+# function that returns if a problem is satisfied given the variables
+# currProblem is a Problem object
+# assignments is an array of integers to represent the current variables assignments
+# returns a boolean value: true if it is satisfiable, false if not
+def verifyWFF(currProblem, assignments):
+
+    # loop through the prob array of current problem
+    for clause in currProblem.probArray:
+
+        # return value of clause
+        clauseRet = False
+
+        # loop through the clause until a zero is hit
+        for literal in clause:
+            
+            if literal == 0:
+                break
+
+            # get absolute value and negation
+            val = abs(literal)
+            negation = (literal < 0)
+
+            # test if this literal evaluates to true
+            if negation:
+                if assignments[val-1] == 0:
+                    clauseRet = True
+                    break
+                    
+            else:
+                if assignments[val-1] == 1:
+                    clauseRet = True
+                    break
+
+        # if clause_ret is still false, then it is unsatisfiable
+        if clauseRet == False:
+            return False
+
+    # if got through every clause, then return true
+    return True
