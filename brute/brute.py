@@ -212,6 +212,11 @@ def main():
     print("Time per clause is", round(timePerClause, 2), "microseconds")
     print("")
 
+    outFile = open("output.txt", "w")
+    outFile.write("Time per clause is ")
+    outFile.write(str(timePerClause))
+    outFile.close()
+
 
 
 main()
