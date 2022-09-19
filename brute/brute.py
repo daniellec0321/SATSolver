@@ -1,4 +1,5 @@
 import sys
+import time
 
 # Class "problem"
 class Problem:
@@ -143,6 +144,8 @@ def writeOutput(currProblem, result):
         print("This evaluation is CORRECT")
         print("")
         return True
+    elif(currProblem.answer == '?'):
+        print("")
     else:
         print("This evaluation is INCORRECT")
         print("")
@@ -163,7 +166,7 @@ def main():
     # get command line input
     filename = sys.argv[1]
     suppressOutput = sys.argv[2]
-    if suppressOutput == 0:
+    if suppressOutput == '0':
         suppressOutput = True
     else:
         suppressOutput = False
@@ -171,9 +174,12 @@ def main():
     # get problem list
     probList = getProblems(filename)
 
+    # get start time
+    startTime = time.time()
+
     # loop through list to get results
     for problem in probList:
-            
+
         problemRes = False
 
         # get each assignment
@@ -196,6 +202,15 @@ def main():
             if test == False:
                 print("ERROR")
                 return
+
+    # get end time and total time
+    endTime = time.time()
+    totalTimeMic = (endTime - startTime)*(10**6)
+    timePerClause = totalTimeMic / len(probList)
+
+    print("")
+    print("Time per clause is", round(timePerClause, 2), "microseconds")
+    print("")
 
 
 
