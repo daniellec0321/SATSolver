@@ -1,3 +1,5 @@
+import sys
+
 # Class "problem"
 class Problem:
 
@@ -145,3 +147,56 @@ def writeOutput(currProblem, result):
         print("This evaluation is INCORRECT")
         print("")
         return False
+
+
+
+#################
+# FUNCTION MAIN #
+#################
+def main():
+
+    # Test command line input
+    if len(sys.argv) != 3:
+        print("Not correct amount of inputs.")
+        return
+
+    # get command line input
+    filename = sys.argv[1]
+    suppressOutput = sys.argv[2]
+    if suppressOutput == 0:
+        suppressOutput = True
+    else:
+        suppressOutput = False
+
+    # get problem list
+    probList = getProblems(filename)
+
+    # loop through list to get results
+    for problem in probList:
+            
+        problemRes = False
+
+        # get each assignment
+        for i in range(0, 2**problem.numVariables):
+
+            # test assignment
+            assignment = generateAssignment(problem, i)
+            assignmentRes = verifyWFF(problem, assignment)
+
+            # if true, then it is satisfiable
+            if assignmentRes == True:
+                problemRes = True
+                break
+
+        # if output not supressed, print results
+        if suppressOutput == False:
+
+            test = writeOutput(problem, problemRes)
+
+            if test == False:
+                print("ERROR")
+                return
+
+
+
+main()
