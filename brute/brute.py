@@ -123,3 +123,25 @@ def verifyWFF(currProblem, assignments):
 
     # if got through every clause, then return true
     return True
+
+
+
+# This function prints the result of our current problem solver
+# currProblem is a Problem object
+# result is a boolean value representing if the problem was satisfiable or not
+# return if the the two evaluations agreed
+def writeOutput(currProblem, result):
+
+    print("---------------------------------")
+    print("Analyzing problem " + str(currProblem.probNumber) + "...")
+    print("Problem " + str(currProblem.probNumber) + " evaluated to be " + str(result))
+
+    # Check against answer in currProblem
+    if (currProblem.answer == 'U' and result == False) or (currProblem.answer == 'S' and result == True):
+        print("This evaluation is CORRECT")
+        print("")
+        return True
+    else:
+        print("This evaluation is INCORRECT")
+        print("")
+        return False
