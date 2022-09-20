@@ -1,6 +1,8 @@
 import sys
 import time
 
+
+
 # Class "problem"
 class Problem:
 
@@ -15,12 +17,13 @@ class Problem:
 
 
 # parse a list into LIST OF CLASS PROBLEMS
+# filename is a string that contains path to file
+# returns a list of Problems
 def getProblems(filename):
 
     rFile = open(filename, "r")
 
-    # values to hold problem info
-    numProblems = 0
+    # The list of problems we will return
     problemList = list()
 
     # initialize readings
@@ -28,10 +31,11 @@ def getProblems(filename):
     pelems = rFile.readline().strip().split(" ")
     currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
 
+    # Loop through file
     currLine = rFile.readline().strip()
     while(currLine):
 
-        # if equation list at counter starts with c, reset
+        # if current line starts with c, begin a new Problem
         if currLine[0] == 'c':
            
             problemList.append(currProblem)
@@ -96,7 +100,7 @@ def verifyWFF(currProblem, assignments):
     # loop through the prob array of current problem
     for clause in currProblem.probArray:
 
-        # return value of clause
+        # represents the return value of clause
         clauseRet = False
 
         # loop through the clause until a zero is hit
@@ -109,7 +113,7 @@ def verifyWFF(currProblem, assignments):
             val = abs(literal)
             negation = (literal < 0)
 
-            # test if this literal evaluates to true
+            # test if this literal evaluates to true, if it is then break
             if negation:
                 if assignments[val-1] == 0:
                     clauseRet = True
@@ -135,20 +139,27 @@ def verifyWFF(currProblem, assignments):
 # return if the the two evaluations agreed
 def writeOutput(currProblem, result):
 
-    print("---------------------------------")
+    print("-----------------------------------------")
     print("Analyzing problem " + str(currProblem.probNumber) + "...")
-    print("Problem " + str(currProblem.probNumber) + " evaluated to be " + str(result))
+    if result == False:
+        print("Problem " + str(currProblem.probNumber) + " evaluated to be UNSATISFIABLE")
+    else:
+        print("Problem " + str(currProblem.probNumber) + " evaluated to be SATISFIABLE")
 
     # Check against answer in currProblem
     if (currProblem.answer == 'U' and result == False) or (currProblem.answer == 'S' and result == True):
-        print("This evaluation is CORRECT")
+
+        print("This evaluation is CORRECT\n")
+        return True
+
+    elif (currProblem.answer == '?'):
+
         print("")
         return True
-    elif(currProblem.answer == '?'):
-        print("")
+
     else:
-        print("This evaluation is INCORRECT")
-        print("")
+
+        print("This evaluation is INCORRECT\n")
         return False
 
 
@@ -174,13 +185,16 @@ def main():
     # get problem list
     probList = getProblems(filename)
 
-    # get start time
-    startTime = time.time()
+    # list to hold each time for each problem
+    probTimes = list()
 
     # loop through list to get results
     for problem in probList:
 
         problemRes = False
+
+        # start timer for current problem
+        startTime = time.time()
 
         # get each assignment
         for i in range(0, 2**problem.numVariables):
@@ -194,28 +208,13 @@ def main():
                 problemRes = True
                 break
 
+        # end the timer and add to array
+        endTime = time.time()
+        probTimes.append((endTime - startTime)*(10**6))
+
         # if output not supressed, print results
         if suppressOutput == False:
-
             test = writeOutput(problem, problemRes)
-
-            if test == False:
-                print("ERROR")
-                return
-
-    # get end time and total time
-    endTime = time.time()
-    totalTimeMic = (endTime - startTime)*(10**6)
-    timePerClause = totalTimeMic / len(probList)
-
-    print("")
-    print("Time per clause is", round(timePerClause, 2), "microseconds")
-    print("")
-
-    outFile = open("output.txt", "w")
-    outFile.write("Time per clause is ")
-    outFile.write(str(timePerClause))
-    outFile.close()
 
 
 
