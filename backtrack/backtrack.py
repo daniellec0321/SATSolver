@@ -16,41 +16,15 @@ class Problem:
 
 
 
-# Class "stack" (makes writing a stack easier for us)
-class Stack:
-
-    def __init__(self):
-        self.__stack = list()
-
-    def push(self, elem):
-        self.__stack.append(elem)
-
-    def top(self):
-        return self.__stack[len(self.__stack)-1]
-
-    def pop(self):
-        return self.__stack.pop()
-
-    def clear(self):
-        self.__stack.clear()
-
-    def empty(self):
-        return len(self.__stack) == 0
-
-    def print(self):
-        print(self.__stack)
-
-
-
 # Class "variable" (holds a current variable value and its flags)
 # vals will always be 0 or 1
 class Var:
 
-    def __init__(self):
-        self.relativeVar = -1
-        self.currValue = -1
-        self.valsTried = list()
-        self.flag = True
+    def __init__(self, relativeVar, currVal, valsTried, allValsTried):
+        self.relativeVar = relativeVar
+        self.currVal = currVal
+        self.valsTried = valsTried
+        self.allValsTried = allValsTried
 
 
 
@@ -105,11 +79,77 @@ def getProblems(filename):
 
 
 
-# returns an array of the next assignments to try
+# returns an array of the next assignments to try, AND a value if it is unsatisfiable or not
 # currProblem is a problem object
 # prevProblemRes is an integer representing what the last verifyWFF outputted
 # currStack is the current stack of vars that we were using
-# def getAssignments(currProblem, prevProblemRes, currStack):
+def getAssignments(currProblem, prevProblemRes, currStack):
+
+    # prevProblem is undetermined - ADD TO STACK
+    if prevProblemRes == -1:
+
+        # create new variable
+        newVar = Var(len(currStack)+1, 0, [0], False)
+
+        # add to stack
+        currStack.append(newVar)
+
+        # create assignments vector
+        assignments = [-1] * currProblem.numVariables
+        for elem in currStack:
+            assignments[elem.relativeVar-1] = elem.currVal
+
+        return assignments, -1
+
+    # prevProblem is unsatisfiable - SWITCH VALUE OR POP
+    elif prevProblemRes == 0:
+
+        # first try switching value at the top
+        if currStack[-1].allValsTried == False:
+
+            # switch the var value
+            currStack[-1].currVal = (currStack[-1].currVal + 1) % 2
+            currStack[-1].valsTried.append(currStack[-1].currVal)
+            if len(currStack[-1].valsTried) >= 2:
+                currStack[-1].allValsTried = True
+
+            # create assignments vector
+            assignments = [-1] * currProblem.numVariables
+            for elem in currStack:
+                assignments[elem.relativeVar-1] = elem.currVal
+
+            return assignments, -1
+
+        # next, try popping until we get to a value we can switch
+        else:
+            
+            while True:
+
+                bad = currStack.pop()
+
+                # if stack is empty, then problem is unsatisfiable
+                if len(currStack) <= 0:
+                    return [], 0
+
+                # test if we can switch top value
+                top = currStack[-1]
+                if top.allValsTried == False:
+                    # switch var value
+                    currStack[-1].currVal = (currStack[-1].currVal + 1) % 2
+                    currStack[-1].valsTried.append(currStack[-1].currVal)
+                    if len(currStack[-1].valsTried) >= 2:
+                        currStack[-1].allValsTried = True
+
+                    # create assignments vector
+                    assignments = [-1] * currProblem.numVariables
+                    for elem in currStack:
+                        assignments[elem.relativeVar-1] = elem.currVal
+
+                    return assignments, -1
+
+
+    else:
+        return [], 1
 
 
 
@@ -206,7 +246,6 @@ def writeOutput(currProblem, result):
 #################
 # FUNCTION MAIN #
 #################
-"""
 def main():
 
     # Test command line input
@@ -236,7 +275,25 @@ def main():
         # start timer for current problem
         startTime = time.time()
 
-        ################ evaluate here ################
+        # initialize stack and assignments
+        firstVar = Var(1, 0, [0], False)
+        stack = list()
+        stack.append(firstVar)
+        assignments = [-1] * problem.numVariables
+        assignments[0] = 0
+
+        # loop through possible assignments
+        while True:
+
+            test = verifyWFF(problem, assignments)
+            assignments, res = getAssignments(problem, test, stack)
+
+            if res == 1:
+                problemRes = True
+                break
+
+            if res == 0:
+                break
 
         # end the timer and add to array
         endTime = time.time()
@@ -249,4 +306,3 @@ def main():
 
 
 main()
-"""
