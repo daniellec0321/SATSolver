@@ -20,11 +20,17 @@ class Problem:
 # vals will always be 0 or 1
 class Var:
 
-    def __init__(self, relativeVar, currVal, valsTried, allValsTried):
+    def __init__(self, relativeVar, currVal):
         self.relativeVar = relativeVar
         self.currVal = currVal
-        self.valsTried = valsTried
-        self.allValsTried = allValsTried
+        self.valsTried = [currVal]
+        self.allValsTried = False
+
+    def swapVal(self):
+        self.currVal = (self.currVal + 1) % 2
+        self.valsTried.append(self.currVal)
+        if len(self.valsTried) >= 2:
+            self.allValsTried = True
 
 
 
@@ -66,7 +72,9 @@ def getProblems(filename):
 
             eq = currLine.split(",")
             for i in range(0, len(eq)):
+                # convert char to int
                 eq[i] = int(eq[i])
+
             currProblem.probArray.append(eq)
 
         # read next line
@@ -85,21 +93,21 @@ def getProblems(filename):
 # currStack is the current stack of vars that we were using
 def getAssignments(currProblem, prevProblemRes, currStack):
 
+    # if prevProblemRes is 10, then this is the initializer
+    if prevProblemRes == 10:
+
+        # initialize stack and assignments
+        firstVar = Var(1, 0)
+        currStack.append(firstVar)
+
     # prevProblem is undetermined - ADD TO STACK
-    if prevProblemRes == -1:
+    elif prevProblemRes == -1:
 
         # create new variable
-        newVar = Var(len(currStack)+1, 0, [0], False)
+        newVar = Var(len(currStack)+1, 0)
 
         # add to stack
         currStack.append(newVar)
-
-        # create assignments vector
-        assignments = [-1] * currProblem.numVariables
-        for elem in currStack:
-            assignments[elem.relativeVar-1] = elem.currVal
-
-        return assignments, -1
 
     # prevProblem is unsatisfiable - SWITCH VALUE OR POP
     elif prevProblemRes == 0:
@@ -107,49 +115,37 @@ def getAssignments(currProblem, prevProblemRes, currStack):
         # first try switching value at the top
         if currStack[-1].allValsTried == False:
 
-            # switch the var value
-            currStack[-1].currVal = (currStack[-1].currVal + 1) % 2
-            currStack[-1].valsTried.append(currStack[-1].currVal)
-            if len(currStack[-1].valsTried) >= 2:
-                currStack[-1].allValsTried = True
+            currStack[-1].swapVal()
 
-            # create assignments vector
-            assignments = [-1] * currProblem.numVariables
-            for elem in currStack:
-                assignments[elem.relativeVar-1] = elem.currVal
-
-            return assignments, -1
-
-        # next, try popping until we get to a value we can switch
+        # if not that, try popping until we get to a value we can switch
         else:
             
+            # loop until valid var is found or stack is empty
             while True:
 
-                bad = currStack.pop()
+                currStack.pop()
 
                 # if stack is empty, then problem is unsatisfiable
                 if len(currStack) <= 0:
                     return [], 0
 
                 # test if we can switch top value
-                top = currStack[-1]
-                if top.allValsTried == False:
+                if currStack[-1].allValsTried == False:
+                    
                     # switch var value
-                    currStack[-1].currVal = (currStack[-1].currVal + 1) % 2
-                    currStack[-1].valsTried.append(currStack[-1].currVal)
-                    if len(currStack[-1].valsTried) >= 2:
-                        currStack[-1].allValsTried = True
+                    currStack[-1].swapVal()
+                    break
 
-                    # create assignments vector
-                    assignments = [-1] * currProblem.numVariables
-                    for elem in currStack:
-                        assignments[elem.relativeVar-1] = elem.currVal
-
-                    return assignments, -1
-
-
+    # We have found that the problem is satisfiable
     else:
         return [], 1
+                    
+    # create and return assignments vector
+    assignments = [-1] * currProblem.numVariables
+    for elem in currStack:
+        assignments[elem.relativeVar-1] = elem.currVal
+
+    return assignments, -1
 
 
 
@@ -159,9 +155,6 @@ def getAssignments(currProblem, prevProblemRes, currStack):
     # 0 is false, 1 is true, -1 is UNDETERMINED
 # returns a 0 if WFF is unsatisfiable, returns a 1 if satisfiable, returns -1 if undetermined
 def verifyWFF(currProblem, assignments):
-
-    # variable that tests if there is a clause that is undetermined
-    udClause = False
 
     # loop through the prob array of current problem
     for clause in currProblem.probArray:
@@ -218,7 +211,7 @@ def verifyWFF(currProblem, assignments):
 # return if the the two evaluations agreed
 def writeOutput(currProblem, result):
 
-    print("-----------------------------------------")
+    print("------------------------------------------")
     print("Analyzing problem " + str(currProblem.probNumber) + "...")
     if result == False:
         print("Problem " + str(currProblem.probNumber) + " evaluated to be UNSATISFIABLE")
@@ -248,6 +241,8 @@ def writeOutput(currProblem, result):
 #################
 def main():
 
+    totalTime = 0
+
     # Test command line input
     if len(sys.argv) != 3:
         print("Not correct amount of inputs.")
@@ -276,11 +271,8 @@ def main():
         startTime = time.time()
 
         # initialize stack and assignments
-        firstVar = Var(1, 0, [0], False)
         stack = list()
-        stack.append(firstVar)
-        assignments = [-1] * problem.numVariables
-        assignments[0] = 0
+        assignments, res = getAssignments(problem, 10, stack)
 
         # loop through possible assignments
         while True:
@@ -288,6 +280,7 @@ def main():
             test = verifyWFF(problem, assignments)
             assignments, res = getAssignments(problem, test, stack)
 
+            # If res is 1 or 0, then we have a result
             if res == 1:
                 problemRes = True
                 break
@@ -298,6 +291,7 @@ def main():
         # end the timer and add to array
         endTime = time.time()
         probTimes.append((endTime - startTime)*(10**6))
+        totalTime += (endTime - startTime)*(10**6)
 
         # if output not supressed, print results
         if suppressOutput == False:
