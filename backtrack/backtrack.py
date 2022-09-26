@@ -3,15 +3,6 @@ import time
 
 
 
-# Class dumb dictionary
-class dumbDict:
-
-    def __init__(self, val, occ):
-        self.val = val
-        self.occ = occ
-
-
-
 # Class "problem"
 class Problem:
 
@@ -250,6 +241,8 @@ def writeOutput(currProblem, result):
 #################
 def main():
 
+    totalTime = 0
+
     # Test command line input
     if len(sys.argv) != 3:
         print("Not correct amount of inputs.")
@@ -271,9 +264,6 @@ def main():
 
     # loop through list to get results
     for problem in probList:
-
-        if problem.numVariables > 10:
-            continue
 
         problemRes = False
 
@@ -301,6 +291,7 @@ def main():
         # end the timer and add to array
         endTime = time.time()
         probTimes.append((endTime - startTime)*(10**6))
+        totalTime += (endTime - startTime)*(10**6)
 
         # if output not supressed, print results
         if suppressOutput == False:
