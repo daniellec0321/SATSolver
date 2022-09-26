@@ -13,6 +13,7 @@ class Problem:
         self.numClauses = int(numClauses_in)
         self.answer = answer_in
         self.probArray = list()
+        self.occ = [0] * int(numVariables_in) # Only use this for backtracking
 
 
 
@@ -49,16 +50,39 @@ def getProblems(filename):
     pelems = rFile.readline().strip().split(" ")
     currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
 
+    # initialize unordered list to count occurrences of each number
+    occ = [0] * currProblem.numVariables
+
     # Loop through file
     currLine = rFile.readline().strip()
     while(currLine):
 
         # if current line starts with c, begin a new Problem
         if currLine[0] == 'c':
-           
+
+            # set occ into current problems using dictionary
+            indices = dict()
+            for i in range(0, len(occ)):
+                if occ[i] in indices:
+                    indices[occ[i]].append(i)
+                else:
+                    indices[occ[i]] = [i]
+
+            # sort occ
+            occ.sort()
+
+            # read dictionary and add to currProblem class
+            for i in range(0, len(occ)):
+                currIndex = indices[occ[i]].pop();
+                currProblem.occ.append(currIndex)
+
+            # append the completed problem and clear occ
+            occ.clear()
             problemList.append(currProblem)
+
+            # begin the new problem
             celems = currLine.split(" ")
-            currProblem = Problem(int(celems[1]), int(celems[2]), -1, -1, celems[3])
+            currProblem = Problem(int(celems[1]), int(celems[2]), 0, -1, celems[3])
 
         # if starts with p, set all other class elements
         elif currLine[0] == 'p':
@@ -66,14 +90,18 @@ def getProblems(filename):
             pelems = currLine.split(" ")
             currProblem.numVariables = int(pelems[2])
             currProblem.numClauses = int(pelems[3])
+            occ = [0] * currProblem.numVariables
     
         # otherwise, append equation to current problem
         else: 
 
             eq = currLine.split(",")
+
+            # convert chars to int and add to occ
             for i in range(0, len(eq)):
-                # convert char to int
                 eq[i] = int(eq[i])
+                if eq[i] != 0:
+                    occ[abs(eq[i])-1] += 1
 
             currProblem.probArray.append(eq)
 
