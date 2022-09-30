@@ -6,16 +6,99 @@ import time
 # Class "problem"
 class Problem:
 
-    def __init__(self, probNumber_in, maxLiterals_in, numVariables_in, numClauses_in, answer_in):
+    def __init__(self, probNumber_in, maxLiterals_in, numVariables_in, numClauses_in, predAnswer_in):
         self.probNumber = int(probNumber_in)
         self.maxLiterals = int(maxLiterals_in)
         self.numVariables = int(numVariables_in)
         self.numClauses = int(numClauses_in)
-        self.predAnswer = answer_in
-        self.probArray = list()
-        self.occ = list() # Only use this for backtracking
         self.totalLiterals = 0
+        self.execTime = 0
+        self.probArray = list()
+        self.literalOcc = list()
+        self.predAnswer = predAnswer_in
         self.answer = '?'
+
+    # Given some external assignments, evaluates if it is satisfiable or not
+    # assignments is an array of integers representing the current variable assignments
+        # 0 is false, 1 is true, -1 is UNDETERMINED
+    # returns a 0 if WFF is unsatisfiable, returns a 1 if satisfiable, returns -1 if undetermined
+    def verifyWFF(self, assignments):
+
+        # loop through the prob array of current problem
+        for clause in self.probArray:
+
+            # represents the return value of the clause: 0 is false, 1 is true, -1 is undetermined
+            clauseRet = -1
+
+            # represents if we had an undetermined var in our clause
+            hasUndetermined = False
+
+            # loop through clause until we hit a true var OR zero
+            for literal in clause:
+
+                # base case: 0
+                if literal == 0:
+                    break
+
+                # get absolute value and negation
+                val = abs(literal)
+                negation = (literal < 0)
+
+                # if assignments at this value is -1, then don't test it
+                if (assignments[val-1] == -1):
+                    hasUndetermined = True
+                    continue
+
+                # test if this value is true
+                if negation:
+                    if assignments[val-1] == 0:
+                        clauseRet = True
+                        break
+
+                else:
+                    if assignments[val-1] == 1:
+                        clauseRet = True
+                        break
+
+            # if clause ret is still -1 and there were no undetermineds, then its unsatisfiable
+            if clauseRet == -1 and hasUndetermined == False:
+                return 0
+
+            # if clause ret is still -1, then we have an undetermined clause
+            if clauseRet == -1:
+                return -1
+
+        # if we got through every clause, then it is satisfiable
+        return 1
+
+
+
+    # This function prints the result of our current problem solver
+    # result is a boolean value representing if the problem was satisfiable or not
+    # return if the the two evaluations agreed
+    def writeOutput(self):
+
+        print("------------------------------------------")
+        print("Analyzing problem " + str(self.probNumber) + "...")
+
+        if self.answer == 'U':
+            print("Problem " + str(self.probNumber) + " evaluated to be UNSATISFIABLE")
+        elif self.answer == 'S':
+            print("Problem " + str(self.probNumber) + " evaluated to be SATISFIABLE")
+        else:
+            print("Problem remains UNDETERMINED\n")
+            return True
+
+        # Check against answer in currProblem
+        if (self.predAnswer == self.answer):
+            print("This evaluation is CORRECT\n")
+            return True
+        elif (self.predAnswer == '?'):
+            print("")
+            return True
+        else:
+            print("This evaluation is INCORRECT\n")
+            return False
 
 
 
@@ -37,7 +120,7 @@ class Var:
 
 
 
-class fileStats:
+class ProblemFile:
 
     def __init__(self):
         self.numProblems = 0
@@ -45,6 +128,8 @@ class fileStats:
         self.numSatisfiable = 0
         self.numAnswersProvided = 0
         self.numAnsweredCorrectly = 0
+
+    # have methods for reading the file, recording stats, recording overall stats
 
 
 
@@ -91,7 +176,7 @@ def getProblems(filename, fstats):
             # read dictionary and add to currProblem class
             for i in range(0, len(occ)):
                 currIndex = indices[occ[i]].pop();
-                currProblem.occ.append(currIndex)
+                currProblem.literalOcc.append(currIndex)
 
             # append the completed problem and clear occ
             occ.clear()
@@ -144,7 +229,7 @@ def getProblems(filename, fstats):
     # read dictionary and add to currProblem class
     for i in range(0, len(occ)):
         currIndex = indices[occ[i]].pop()
-        currProblem.occ.append(currIndex)
+        currProblem.literalOcc.append(currIndex)
 
     problemList.append(currProblem)
 
@@ -163,7 +248,7 @@ def getAssignments(currProblem, prevProblemRes, currStack):
 
         # initialize stack and assignments
         # do the first relative variable in currProblem's occ
-        firstVar = Var(currProblem.occ[0]+1, 0)
+        firstVar = Var(currProblem.literalOcc[0]+1, 0)
         currStack.append(firstVar)
 
     # prevProblem is undetermined - ADD TO STACK
@@ -171,7 +256,7 @@ def getAssignments(currProblem, prevProblemRes, currStack):
 
         # create new variable
         # use the next available variable in occ
-        newVar = Var(currProblem.occ[len(currStack)]+1, 0)
+        newVar = Var(currProblem.literalOcc[len(currStack)]+1, 0)
 
         # add to stack
         currStack.append(newVar)
@@ -217,93 +302,6 @@ def getAssignments(currProblem, prevProblemRes, currStack):
         assignments[elem.relativeVar-1] = elem.currVal
 
     return assignments, -1
-
-
-
-# Takes a problem and evaluates if it is satisfiable or not
-# currProblem is a problem object
-# assignments is an array of integers representing the current variable assignments
-    # 0 is false, 1 is true, -1 is UNDETERMINED
-# returns a 0 if WFF is unsatisfiable, returns a 1 if satisfiable, returns -1 if undetermined
-def verifyWFF(currProblem, assignments):
-
-    # loop through the prob array of current problem
-    for clause in currProblem.probArray:
-
-        # represents the return value of the clause: 0 is false, 1 is true, -1 is undetermined
-        clauseRet = -1
-
-        # represents if we had an undetermined var in our clause
-        hasUndetermined = False
-
-        # loop through clause until we hit a true var OR zero
-        for literal in clause:
-
-            # base case: 0
-            if literal == 0:
-                break
-
-            # get absolute value and negation
-            val = abs(literal)
-            negation = (literal < 0)
-
-            # if assignments at this value is -1, then don't test it
-            if (assignments[val-1] == -1):
-                hasUndetermined = True
-                continue
-
-            # test if this value is true
-            if negation:
-                if assignments[val-1] == 0:
-                    clauseRet = True
-                    break
-
-            else:
-                if assignments[val-1] == 1:
-                    clauseRet = True
-                    break
-
-        # if clause ret is still -1 and there were no undetermineds, then its unsatisfiable
-        if clauseRet == -1 and hasUndetermined == False:
-            return 0
-
-        # if clause ret is still -1, then we have an undetermined clause
-        if clauseRet == -1:
-            return -1
-
-    # if we got through every clause, then it is satisfiable
-    return 1
-
-
-
-# This function prints the result of our current problem solver
-# currProblem is a Problem object
-# result is a boolean value representing if the problem was satisfiable or not
-# return if the the two evaluations agreed
-def writeOutput(currProblem, result):
-
-    print("------------------------------------------")
-    print("Analyzing problem " + str(currProblem.probNumber) + "...")
-    if result == False:
-        print("Problem " + str(currProblem.probNumber) + " evaluated to be UNSATISFIABLE")
-    else:
-        print("Problem " + str(currProblem.probNumber) + " evaluated to be SATISFIABLE")
-
-    # Check against answer in currProblem
-    if (currProblem.predAnswer == currProblem.answer):
-
-        print("This evaluation is CORRECT\n")
-        return True
-
-    elif (currProblem.predAnswer == '?'):
-
-        print("")
-        return True
-
-    else:
-
-        print("This evaluation is INCORRECT\n")
-        return False
 
 
 
@@ -373,7 +371,7 @@ def main():
     csvFile = open("resBacktrack.csv", "w")
     
     # records stats about the file
-    fstats = fileStats()
+    fstats = ProblemFile()
 
     # get problem list
     probList = getProblems(filename, fstats)
@@ -396,7 +394,8 @@ def main():
         # loop through possible assignments
         while True:
 
-            test = verifyWFF(problem, assignments)
+            # test = verifyWFF(problem, assignments)
+            test = problem.verifyWFF(assignments)
             assignments, res = getAssignments(problem, test, stack)
 
             # If res is 1 or 0, then we have a result
@@ -411,6 +410,9 @@ def main():
         endTime = time.time()
         probTimes.append((endTime - startTime)*(10**6))
         totalTime += (endTime - startTime)*(10**6)
+
+        # add time taken to problem
+        problem.execTime = (endTime - startTime)*(10**6)
 
         # add result to problem
         if problemRes == True:
@@ -427,7 +429,7 @@ def main():
 
         # if output not supressed, print results
         if suppressOutput == False:
-            test = writeOutput(problem, problemRes)
+            test = problem.writeOutput()
 
         recordStats(csvFile, problem, assignments, (endTime - startTime)*(10**6))
 
