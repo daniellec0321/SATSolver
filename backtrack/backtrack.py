@@ -11,11 +11,12 @@ class Problem:
         self.maxLiterals = int(maxLiterals_in)
         self.numVariables = int(numVariables_in)
         self.numClauses = int(numClauses_in)
-        self.answer = answer_in
+        self.predAnswer = answer_in
         self.probArray = list()
         # self.occ = [0] * int(numVariables_in) # Only use this for backtracking
         self.occ = list() # Only use this for backtracking
         self.totalLiterals = 0
+        self.answer = '?'
 
 
 
@@ -37,10 +38,21 @@ class Var:
 
 
 
+class fileStats:
+
+    def __init__(self):
+        self.numProblems = 0
+        self.numUnsatisfiable = 0
+        self.numSatisfiable = 0
+        self.numAnswersProvided = 0
+        self.numAnsweredCorrectly = 0
+
+
+
 # parse a list into LIST OF CLASS PROBLEMS
 # filename is a string that contains path to file
 # returns a list of Problems
-def getProblems(filename):
+def getProblems(filename, fstats):
 
     rFile = open(filename, "r")
 
@@ -51,6 +63,10 @@ def getProblems(filename):
     celems = rFile.readline().strip().split(" ")
     pelems = rFile.readline().strip().split(" ")
     currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
+
+    fstats.numProblems += 1
+    if (celems[3] == 'U') or (celems[3] == 'S'):
+        fstats.numAnswersProvided += 1
 
     # initialize unordered list to count occurrences of each number
     occ = [0] * currProblem.numVariables
@@ -85,6 +101,9 @@ def getProblems(filename):
             # begin the new problem
             celems = currLine.split(" ")
             currProblem = Problem(int(celems[1]), int(celems[2]), 0, -1, celems[3])
+            fstats.numProblems += 1
+            if (celems[3] == 'U') or (celems[3] == 'S'):
+                fstats.numAnswersProvided += 1
 
         # if starts with p, set all other class elements
         elif currLine[0] == 'p':
@@ -105,7 +124,9 @@ def getProblems(filename):
                 if eq[i] != 0:
                     occ[abs(eq[i])-1] += 1
 
+            # add equation and num variables to problem
             currProblem.probArray.append(eq)
+            currProblem.totalLiterals += len(eq) - 1
 
         # read next line
         currLine = rFile.readline().strip()
@@ -185,7 +206,11 @@ def getAssignments(currProblem, prevProblemRes, currStack):
 
     # We have found that the problem is satisfiable
     else:
-        return [], 1
+        # create and return assignments vector
+        assignments = [-1] * currProblem.numVariables
+        for elem in currStack:
+            assignments[elem.relativeVar-1] = elem.currVal
+        return assignments, 1
                     
     # create and return assignments vector
     assignments = [-1] * currProblem.numVariables
@@ -266,12 +291,13 @@ def writeOutput(currProblem, result):
         print("Problem " + str(currProblem.probNumber) + " evaluated to be SATISFIABLE")
 
     # Check against answer in currProblem
-    if (currProblem.answer == 'U' and result == False) or (currProblem.answer == 'S' and result == True):
+    # if (currProblem.predAnswer == 'U' and result == False) or (currProblem.predAnswer == 'S' and result == True):
+    if (currProblem.predAnswer == currProblem.answer):
 
         print("This evaluation is CORRECT\n")
         return True
 
-    elif (currProblem.answer == '?'):
+    elif (currProblem.predAnswer == '?'):
 
         print("")
         return True
@@ -292,11 +318,38 @@ def recordStats(wFile, currProblem, assignments, execTime):
     wFile.write(str(currProblem.numClauses) + ",")
     wFile.write(str(currProblem.maxLiterals) + ",")
     wFile.write(str(currProblem.totalLiterals) + ",")
-    wFile.write(str(currProblem.probNumber) + ",")
-    wFile.write(str(currProblem.probNumber) + ",")
-    wFile.write(str(execTime) + "\n")
+    wFile.write(currProblem.answer + ",")
+
+    # print if prediction was matched
+    if (currProblem.predAnswer == '?'):
+        wFile.write("0,")
+    elif (currProblem.predAnswer == currProblem.answer):
+        wFile.write("1,")
+    else:
+        wFile.write("-1,")
+
+    wFile.write(str(round(execTime)))
+
+    if (currProblem.answer == 'S'):
+        wFile.write(",")
+        for i in range(0, len(assignments) - 1):
+            wFile.write(str(assignments[i]) + ",")
+        wFile.write(str(assignments[len(assignments) - 1]))
+
+    wFile.write("\n")
 
     return
+
+
+
+def printOverallStats(wFile, fstats):
+
+    wFile.write("The SenSATional Duo,")
+    wFile.write(str(fstats.numProblems) + ",")
+    wFile.write(str(fstats.numSatisfiable) + ",")
+    wFile.write(str(fstats.numUnsatisfiable) + ",")
+    wFile.write(str(fstats.numAnswersProvided) + ",")
+    wFile.write(str(fstats.numAnsweredCorrectly) + ",")
 
 
 
@@ -321,16 +374,22 @@ def main():
         suppressOutput = False
 
     # open file to record csv file
-    csvFile = open("backtrack_results.csv", "w")
+    csvFile = open("resBacktrack.csv", "w")
+    
+    # records stats about the file
+    fstats = fileStats()
 
     # get problem list
-    probList = getProblems(filename)
+    probList = getProblems(filename, fstats)
 
     # list to hold each time for each problem
     probTimes = list()
 
     # loop through list to get results
     for problem in probList:
+
+        if problem.numVariables > 5:
+            continue
         
         problemRes = False
 
@@ -360,6 +419,19 @@ def main():
         probTimes.append((endTime - startTime)*(10**6))
         totalTime += (endTime - startTime)*(10**6)
 
+        # add result to problem
+        if problemRes == True:
+            problem.answer = 'S'
+            fstats.numSatisfiable += 1
+        else:
+            problem.answer = 'U'
+            fstats.numUnsatisfiable += 1
+
+        # get whether I was correct or not
+        if problem.predAnswer == 'U' or problem.predAnswer == 'S':
+            if problem.predAnswer == problem.answer:
+                fstats.numAnsweredCorrectly += 1
+
         # if output not supressed, print results
         if suppressOutput == False:
             test = writeOutput(problem, problemRes)
@@ -367,6 +439,8 @@ def main():
         recordStats(csvFile, problem, assignments, (endTime - startTime)*(10**6))
 
     print("Total time was", totalTime/(10**6)/60, "minutes")
+
+    printOverallStats(csvFile, fstats)
 
     csvFile.close()
 
