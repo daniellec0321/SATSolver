@@ -13,7 +13,8 @@ class Problem:
         self.numClauses = int(numClauses_in)
         self.answer = answer_in
         self.probArray = list()
-        self.occ = [0] * int(numVariables_in) # Only use this for backtracking
+        # self.occ = [0] * int(numVariables_in) # Only use this for backtracking
+        self.occ = list() # Only use this for backtracking
 
 
 
@@ -69,7 +70,7 @@ def getProblems(filename):
                     indices[occ[i]] = [i]
 
             # sort occ
-            occ.sort()
+            occ.sort(reverse = True)
 
             # read dictionary and add to currProblem class
             for i in range(0, len(occ)):
@@ -125,14 +126,16 @@ def getAssignments(currProblem, prevProblemRes, currStack):
     if prevProblemRes == 10:
 
         # initialize stack and assignments
-        firstVar = Var(1, 0)
+        # do the first relative variable in currProblem's occ
+        firstVar = Var(currProblem.occ[0]+1, 0)
         currStack.append(firstVar)
 
     # prevProblem is undetermined - ADD TO STACK
     elif prevProblemRes == -1:
 
         # create new variable
-        newVar = Var(len(currStack)+1, 0)
+        # use the next available variable in occ
+        newVar = Var(currProblem.occ[len(currStack)]+1, 0)
 
         # add to stack
         currStack.append(newVar)
@@ -324,6 +327,8 @@ def main():
         # if output not supressed, print results
         if suppressOutput == False:
             test = writeOutput(problem, problemRes)
+
+    print("Total time was", totalTime/(10**6)/60, "minutes")
 
 
 
