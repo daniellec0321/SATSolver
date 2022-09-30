@@ -15,6 +15,7 @@ class Problem:
         self.probArray = list()
         # self.occ = [0] * int(numVariables_in) # Only use this for backtracking
         self.occ = list() # Only use this for backtracking
+        self.totalLiterals = 0
 
 
 
@@ -110,6 +111,21 @@ def getProblems(filename):
         currLine = rFile.readline().strip()
 
     # append last problem to list
+    indices = dict()
+    for i in range(0, len(occ)):
+        if occ[i] in indices:
+            indices[occ[i]].append(i)
+        else:
+            indices[occ[i]] = [i]
+
+    # sort occ
+    occ.sort(reverse = True)
+
+    # read dictionary and add to currProblem class
+    for i in range(0, len(occ)):
+        currIndex = indices[occ[i]].pop()
+        currProblem.occ.append(currIndex)
+
     problemList.append(currProblem)
 
     return problemList
@@ -267,6 +283,23 @@ def writeOutput(currProblem, result):
 
 
 
+def recordStats(wFile, currProblem, assignments, execTime):
+
+    # problem number, number of variables, number of clauses, max literals, total literals, whether I got S or U, if that matched the prediction, execution time in microseconds, assignments if S 
+
+    wFile.write(str(currProblem.probNumber) + ",")
+    wFile.write(str(currProblem.numVariables) + ",")
+    wFile.write(str(currProblem.numClauses) + ",")
+    wFile.write(str(currProblem.maxLiterals) + ",")
+    wFile.write(str(currProblem.totalLiterals) + ",")
+    wFile.write(str(currProblem.probNumber) + ",")
+    wFile.write(str(currProblem.probNumber) + ",")
+    wFile.write(str(execTime) + "\n")
+
+    return
+
+
+
 #################
 # FUNCTION MAIN #
 #################
@@ -287,6 +320,9 @@ def main():
     else:
         suppressOutput = False
 
+    # open file to record csv file
+    csvFile = open("backtrack_results.csv", "w")
+
     # get problem list
     probList = getProblems(filename)
 
@@ -295,7 +331,7 @@ def main():
 
     # loop through list to get results
     for problem in probList:
-
+        
         problemRes = False
 
         # start timer for current problem
@@ -328,7 +364,11 @@ def main():
         if suppressOutput == False:
             test = writeOutput(problem, problemRes)
 
+        recordStats(csvFile, problem, assignments, (endTime - startTime)*(10**6))
+
     print("Total time was", totalTime/(10**6)/60, "minutes")
+
+    csvFile.close()
 
 
 
