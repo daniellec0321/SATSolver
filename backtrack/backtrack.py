@@ -13,7 +13,6 @@ class Problem:
         self.numClauses = int(numClauses_in)
         self.predAnswer = answer_in
         self.probArray = list()
-        # self.occ = [0] * int(numVariables_in) # Only use this for backtracking
         self.occ = list() # Only use this for backtracking
         self.totalLiterals = 0
         self.answer = '?'
@@ -291,7 +290,6 @@ def writeOutput(currProblem, result):
         print("Problem " + str(currProblem.probNumber) + " evaluated to be SATISFIABLE")
 
     # Check against answer in currProblem
-    # if (currProblem.predAnswer == 'U' and result == False) or (currProblem.predAnswer == 'S' and result == True):
     if (currProblem.predAnswer == currProblem.answer):
 
         print("This evaluation is CORRECT\n")
@@ -310,8 +308,6 @@ def writeOutput(currProblem, result):
 
 
 def recordStats(wFile, currProblem, assignments, execTime):
-
-    # problem number, number of variables, number of clauses, max literals, total literals, whether I got S or U, if that matched the prediction, execution time in microseconds, assignments if S 
 
     wFile.write(str(currProblem.probNumber) + ",")
     wFile.write(str(currProblem.numVariables) + ",")
@@ -349,7 +345,7 @@ def printOverallStats(wFile, fstats):
     wFile.write(str(fstats.numSatisfiable) + ",")
     wFile.write(str(fstats.numUnsatisfiable) + ",")
     wFile.write(str(fstats.numAnswersProvided) + ",")
-    wFile.write(str(fstats.numAnsweredCorrectly) + ",")
+    wFile.write(str(fstats.numAnsweredCorrectly))
 
 
 
@@ -388,9 +384,6 @@ def main():
     # loop through list to get results
     for problem in probList:
 
-        if problem.numVariables > 5:
-            continue
-        
         problemRes = False
 
         # start timer for current problem
