@@ -6,67 +6,191 @@ import time
 # Class "problem"
 class Problem:
 
-    def __init__(self, probNumber_in, maxLiterals_in, numVariables_in, numClauses_in, answer_in):
+    def __init__(self, probNumber_in, maxLiterals_in, numVariables_in, numClauses_in, predAnswer_in):
         self.probNumber = int(probNumber_in)
         self.maxLiterals = int(maxLiterals_in)
         self.numVariables = int(numVariables_in)
         self.numClauses = int(numClauses_in)
-        self.answer = answer_in
+        self.totalLiterals = 0
+        self.execTime = 0
         self.probArray = list()
+        self.predAnswer = predAnswer_in
+        self.answer = '?'
+
+    # function that returns if a problem is satisfied given the variables
+    # assignments is an array of integers to represent the current variables assignments
+    # returns a boolean value: true if it is satisfiable, false if not
+    def verifyWFF(self, assignments):
+
+        # loop through the prob array of current problem
+        for clause in self.probArray:
+
+            # represents the return value of clause
+            clauseRet = False
+
+            # loop through the clause until a zero is hit
+            for literal in clause:
+                
+                if literal == 0:
+                    break
+
+                # get absolute value and negation
+                val = abs(literal)
+                negation = (literal < 0)
+
+                # test if this literal evaluates to true, if it is then break
+                if negation:
+                    if assignments[val-1] == 0:
+                        clauseRet = True
+                        break
+                    
+                else:
+                    if assignments[val-1] == 1:
+                        clauseRet = True
+                        break
+
+            # if clause_ret is still false, then it is unsatisfiable with these assignments
+            if clauseRet == False:
+                return False
+
+        # if got through every clause, then return true
+        return True
+
+    # This function prints the result of our current problem solver
+    def writeOutput(self):
+
+        print("-----------------------------------------")
+        print("Analyzing problem " + str(self.probNumber) + "...")
+
+        if self.answer == 'U':
+            print("Problem " + str(self.probNumber) + " evaluated to be UNSATISFIABLE")
+        elif self.answer == 'S':
+            print("Problem " + str(self.probNumber) + " evaluated to be SATISFIABLE")
+        else:
+            print("Problem " + str(self.probNumber) + " is UNDETERMINED")
+
+        # Check against answer in currProblem
+        if self.predAnswer == self.answer:
+            print("This evaluation is CORRECT\n")
+        elif self.predAnswer == '?':
+            print("")
+        else:
+            print("This evaluation is INCORRECT\n")
+
+        return
+
+    def recordStats(self, wFile, assignments):
+        
+        wFile.write(str(self.probNumber) + ",")
+        wFile.write(str(self.numVariables) + ",")
+        wFile.write(str(self.numClauses) + ",")
+        wFile.write(str(self.maxLiterals) + ",")
+        wFile.write(str(self.totalLiterals) + ",")
+        wFile.write(self.answer + ",")
+
+        # print if prediction matched
+        if (self.predAnswer == '?'):
+            wFile.write("0,")
+        elif (self.predAnswer == self.answer):
+            wFile.write("1,")
+        else:
+            wFile.write("-1,")
+
+        wFile.write(str(round(self.execTime)))
+
+        # print the working assignments, if needed
+        if (self.answer == 'S'):
+            wFile.write(",")
+            for i in range(0, len(assignments)-1):
+                wFile.write(str(assignments[i]) + ",")
+            wFile.write(str(assignments[len(assignments) - 1]))
+
+        wFile.write("\n")
+
+        return
 
 
 
-# parse a list into LIST OF CLASS PROBLEMS
-# filename is a string that contains path to file
-# returns a list of Problems
-def getProblems(filename):
+class ProblemFile:
 
-    rFile = open(filename, "r")
+    def __init__(self):
+        self.numProblems = 0
+        self.numUnsatisfiable = 0
+        self.numSatisfiable = 0
+        self.numAnswersProvided = 0
+        self.numAnsweredCorrectly = 0
+        self.probList = list()
 
-    # The list of problems we will return
-    problemList = list()
-
-    # initialize readings
-    celems = rFile.readline().strip().split(" ")
-    pelems = rFile.readline().strip().split(" ")
-    currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
-
-    # Loop through file
-    currLine = rFile.readline().strip()
-    while(currLine):
-
-        # if current line starts with c, begin a new Problem
-        if currLine[0] == 'c':
-           
-            problemList.append(currProblem)
-            celems = currLine.split(" ")
-            currProblem = Problem(int(celems[1]), int(celems[2]), -1, -1, celems[3])
-
-        # if starts with p, set all other class elements
-        elif currLine[0] == 'p':
-
-            pelems = currLine.split(" ")
-            currProblem.numVariables = int(pelems[2])
-            currProblem.numClauses = int(pelems[3])
+    # parse a list into LIST OF CLASS PROBLEMS
+    # filename is a string that contains path to file
+    def getProblems(self, filename):
     
-        # otherwise, append equation to current problem
-        else: 
+        rFile = open(filename, "r")
 
-            eq = currLine.split(",")
-            for i in range(0, len(eq)):
-                eq[i] = int(eq[i])
-            currProblem.probArray.append(eq)
+        # initialize readings
+        celems = rFile.readline().strip().split(" ")
+        pelems = rFile.readline().strip().split(" ")
+        currProblem = Problem(celems[1], celems[2], pelems[2], pelems[3], celems[3])
+        self.numProblems += 1
+        if celems[3] == 'U' or celems[3] == 'S':
+            self.numAnswersProvided += 1
 
-        # read next line
+        # Loop through file
         currLine = rFile.readline().strip()
+        while(currLine):
 
-    # append last problem to list
-    problemList.append(currProblem)
+            # if current line starts with c, begin a new Problem
+            if currLine[0] == 'c':
+           
+                self.probList.append(currProblem)
+                celems = currLine.split(" ")
+                currProblem = Problem(int(celems[1]), int(celems[2]), -1, -1, celems[3])
+                self.numProblems += 1
+                if celems[3] == 'U' or celems[3] == 'S':
+                    self.numAnswersProvided += 1
 
-    return problemList
+            # if starts with p, set all other class elements
+            elif currLine[0] == 'p':
+
+                pelems = currLine.split(" ")
+                currProblem.numVariables = int(pelems[2])
+                currProblem.numClauses = int(pelems[3])
+    
+            # otherwise, append equation to current problem
+            else: 
+
+                eq = currLine.split(",")
+                for i in range(0, len(eq)):
+                    eq[i] = int(eq[i])
+                currProblem.probArray.append(eq)
+                currProblem.totalLiterals += len(eq) - 1
+
+            # read next line
+            currLine = rFile.readline().strip()
+
+        # append last problem to list
+        self.probList.append(currProblem)
+
+        return
+
+    def printOverallStats(self, wFile, filename):
+
+        arr = filename.split(".cnf")
+        filename = arr[0]
+        arr = filename.split("../tests/")
+        noExt = arr[1]
+
+        wFile.write(noExt + ",")
+        wFile.write("The SenSATional Duo,")
+        wFile.write(str(self.numProblems) + ",")
+        wFile.write(str(self.numSatisfiable) + ",")
+        wFile.write(str(self.numUnsatisfiable) + ",")
+        wFile.write(str(self.numAnswersProvided) + ",")
+        wFile.write(str(self.numAnsweredCorrectly))
 
 
 
+# EXTERNAL FUNCTION, NOT PART OF A CLASS
 # function that generates the next assignment of variables
 # currProblem is a Problem object
 # attemptNumber is an integer
@@ -91,79 +215,6 @@ def generateAssignment(currProblem, attemptNumber):
 
 
 
-# function that returns if a problem is satisfied given the variables
-# currProblem is a Problem object
-# assignments is an array of integers to represent the current variables assignments
-# returns a boolean value: true if it is satisfiable, false if not
-def verifyWFF(currProblem, assignments):
-
-    # loop through the prob array of current problem
-    for clause in currProblem.probArray:
-
-        # represents the return value of clause
-        clauseRet = False
-
-        # loop through the clause until a zero is hit
-        for literal in clause:
-            
-            if literal == 0:
-                break
-
-            # get absolute value and negation
-            val = abs(literal)
-            negation = (literal < 0)
-
-            # test if this literal evaluates to true, if it is then break
-            if negation:
-                if assignments[val-1] == 0:
-                    clauseRet = True
-                    break
-                    
-            else:
-                if assignments[val-1] == 1:
-                    clauseRet = True
-                    break
-
-        # if clause_ret is still false, then it is unsatisfiable
-        if clauseRet == False:
-            return False
-
-    # if got through every clause, then return true
-    return True
-
-
-
-# This function prints the result of our current problem solver
-# currProblem is a Problem object
-# result is a boolean value representing if the problem was satisfiable or not
-# return if the the two evaluations agreed
-def writeOutput(currProblem, result):
-
-    print("-----------------------------------------")
-    print("Analyzing problem " + str(currProblem.probNumber) + "...")
-    if result == False:
-        print("Problem " + str(currProblem.probNumber) + " evaluated to be UNSATISFIABLE")
-    else:
-        print("Problem " + str(currProblem.probNumber) + " evaluated to be SATISFIABLE")
-
-    # Check against answer in currProblem
-    if (currProblem.answer == 'U' and result == False) or (currProblem.answer == 'S' and result == True):
-
-        print("This evaluation is CORRECT\n")
-        return True
-
-    elif (currProblem.answer == '?'):
-
-        print("")
-        return True
-
-    else:
-
-        print("This evaluation is INCORRECT\n")
-        return False
-
-
-
 #################
 # FUNCTION MAIN #
 #################
@@ -182,14 +233,18 @@ def main():
     else:
         suppressOutput = False
 
-    # get problem list
-    probList = getProblems(filename)
+    # Open CSV file
+    csvFile = open("resBactrack.csv", "w")
 
-    # list to hold each time for each problem
-    probTimes = list()
+    # Get file stats
+    fstats = ProblemFile()
+    fstats.getProblems(filename)
 
     # loop through list to get results
-    for problem in probList:
+    for currProblem in fstats.probList:
+        
+        if currProblem.numVariables > 10:
+            continue
 
         problemRes = False
 
@@ -197,24 +252,43 @@ def main():
         startTime = time.time()
 
         # get each assignment
-        for i in range(0, 2**problem.numVariables):
+        for i in range(0, 2**currProblem.numVariables):
 
             # test assignment
-            assignment = generateAssignment(problem, i)
-            assignmentRes = verifyWFF(problem, assignment)
+            assignment = generateAssignment(currProblem, i)
+            assignmentRes = currProblem.verifyWFF(assignment)
 
             # if true, then it is satisfiable
             if assignmentRes == True:
                 problemRes = True
                 break
-
-        # end the timer and add to array
+        
+        # end the timer and add problem
         endTime = time.time()
-        probTimes.append((endTime - startTime)*(10**6))
+        currProblem.execTime = (endTime - startTime)*(10**6)
+
+        # add problem Res to problem class
+        if problemRes == True:
+            currProblem.answer = 'S'
+            fstats.numSatisfiable += 1
+        else:
+            currProblem.answer = 'U'
+            fstats.numUnsatisfiable += 1
+
+        # add correctness
+        if currProblem.predAnswer == 'U' or currProblem.predAnswer == 'S':
+            if currProblem.predAnswer == currProblem.answer:
+                fstats.numAnsweredCorrectly += 1
 
         # if output not supressed, print results
         if suppressOutput == False:
-            test = writeOutput(problem, problemRes)
+            currProblem.writeOutput()
+    
+        # Record to CSV file
+        currProblem.recordStats(csvFile, assignment)
+
+    # Record overall stats to CSV file
+    fstats.printOverallStats(csvFile, filename)
 
 
 
