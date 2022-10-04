@@ -243,9 +243,6 @@ def main():
     # loop through list to get results
     for currProblem in fstats.probList:
         
-        if currProblem.numVariables > 10:
-            continue
-
         problemRes = False
 
         # start timer for current problem
