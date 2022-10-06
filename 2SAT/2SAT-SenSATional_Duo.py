@@ -108,14 +108,12 @@ def getAssignments(currProblem, prevProblemRes, currStack, bonusAssigns):
         
         # add bonus assigns for 2sat
         for assignment in bonusAssigns.items():
-            if not assignment[0] in vars_in_stack: 
-                #print("appending bonus Var(" + str(assignment[0]) + ", " + str(assignment[1]) + ")")
+            if not assignment[0] in vars_in_stack:
                 assignmentMade = True
                 newVar = Var(assignment[0], assignment[1])
                 newVar.valsTried = [0,1]
                 newVar.allValsTried = True
                 currStack.append(newVar)
-                #print("adding " + str(assignment[0]))
                 vars_in_stack.add(assignment[0])
 
         if not assignmentMade:
@@ -132,10 +130,8 @@ def getAssignments(currProblem, prevProblemRes, currStack, bonusAssigns):
             newVar = Var(assign_var, 0)
 
             # add to stack
-            # print("appending Var(" + str(len(currStack)+1) + ", 0)")
             currStack.append(newVar)
-            # print("adding " + str(len(currStack)+1))
-            vars_in_stack.add(len(currStack)+1)
+            vars_in_stack.add(assign_var)
 
     # prevProblem is unsatisfiable - SWITCH VALUE OR POP
     elif prevProblemRes == 0:
@@ -152,7 +148,6 @@ def getAssignments(currProblem, prevProblemRes, currStack, bonusAssigns):
             while True:
 
                 x = currStack.pop()
-                #print("removing " + str(x))
                 vars_in_stack.remove(x.relativeVar)
 
                 # if stack is empty, then problem is unsatisfiable
@@ -173,7 +168,6 @@ def getAssignments(currProblem, prevProblemRes, currStack, bonusAssigns):
     # create and return assignments vector
     assignments = [-1] * currProblem.numVariables
     for elem in currStack:
-        #print(elem.relativeVar, elem.currVal)
         assignments[elem.relativeVar-1] = elem.currVal
 
     return assignments, -1
@@ -189,8 +183,6 @@ def verifyWFF(currProblem, assignments):
 
     # dictionary that stores {variable: value} pairs to be appended that must be true
     bonusAssigns = {}
-    # for i in range(len(assignments)):
-    #     bonusAssigns[i+1] = 2
 
     # loop through the prob array of current problem
     for clause in currProblem.probArray:
@@ -235,11 +227,8 @@ def verifyWFF(currProblem, assignments):
         # if clause ret is still -1, then we have an undetermined clause
         if clauseRet == -1:
 
-            # check for 2sat opportunity
-            # first round of bonus assigns
+            # check for 2sat algorithm opportunity
             for clause in currProblem.probArray:
-                #print(assignments, clause)
-                #print(clause[0])
                 if (assignments[abs(clause[0])-1] == 0 and clause[0] > 0) or (assignments[abs(clause[0])-1] == 1 and clause[0] < 0):
                     assign_var = abs(clause[1])
                     assign_val = 1 if (clause[1] > 0) else 0
@@ -249,17 +238,13 @@ def verifyWFF(currProblem, assignments):
                 else:
                     continue
 
-                print("clause: (" + str(clause[0]) + ", " + str(clause[1]) + ")  ass_var: " + str(assign_var) + "  ass_val: " + str(assign_val))
-
                 if assign_var in bonusAssigns:
                     # if duplicate contradicts, then assignment is unsatisfiable
                     if bonusAssigns[assign_var] != assign_val:
-                        print("uh oh")
                         return [], 0
                 else:
                     bonusAssigns[assign_var] = assign_val
                     
-            #print(bonusAssigns)
             return bonusAssigns, -1
 
     # if we got through every clause, then it is satisfiable
@@ -334,14 +319,13 @@ def main():
 
         # initialize stack and assignments
         stack = list()
+        vars_in_stack.clear()
         assignments, res = getAssignments(problem, 10, stack, [])
 
         # loop through possible assignments
         while True:
-            print(assignments)
 
             bonusAssigns, test = verifyWFF(problem, assignments)
-            print("bonusAssigns: " + str(bonusAssigns))
             assignments, res = getAssignments(problem, test, stack, bonusAssigns)
 
             # If res is 1 or 0, then we have a result
