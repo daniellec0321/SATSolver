@@ -11,7 +11,10 @@ class Problem:
         self.maxLiterals = int(maxLiterals_in)
         self.numVariables = int(numVariables_in)
         self.numClauses = int(numClauses_in)
+        self.totalLiterals = 0
+        self.execTime = 0
         self.answer = answer_in
+        self.myAnswer = '?'
         self.probArray = list()
 
 
@@ -34,6 +37,12 @@ class Var:
 
 # a set to keep track of the variables that already exist in the stack
 vars_in_stack = set()
+
+# initialize overall file variables
+numSat = 0
+numUnsat = 0
+numAnsProv = 0
+numCorrect = 0
 
 # parse a list into LIST OF CLASS PROBLEMS
 # filename is a string that contains path to file
@@ -60,6 +69,9 @@ def getProblems(filename):
             problemList.append(currProblem)
             celems = currLine.split(" ")
             currProblem = Problem(int(celems[1]), int(celems[2]), -1, -1, celems[3])
+
+            if (celems[3] != '?'):
+                numAnsProv += 1
             
         # if starts with p, set all other class elements
         elif currLine[0] == 'p':
@@ -75,6 +87,8 @@ def getProblems(filename):
             for i in range(0, len(eq)):
                 # convert char to int
                 eq[i] = int(eq[i])
+                if (eq[i] != 0):
+                    currProblem.totalLiterals += 1
 
             currProblem.probArray.append(eq)
 
@@ -269,6 +283,8 @@ def writeOutput(currProblem, result):
     if (currProblem.answer == 'U' and result == False) or (currProblem.answer == 'S' and result == True):
 
         print("This evaluation is CORRECT\n")
+        global numCorrect
+        numCorrect += 1
         return True
 
     elif (currProblem.answer == '?'):
@@ -303,6 +319,8 @@ def main():
     else:
         suppressOutput = False
 
+    csvFile = open("res2SAT.csv", "w")
+
     # get problem list
     probList = getProblems(filename)
 
@@ -330,10 +348,14 @@ def main():
 
             # If res is 1 or 0, then we have a result
             if res == 1:
+                global numSat
+                numSat += 1
                 problemRes = True
                 break
 
             if res == 0:
+                global numUnsat
+                numUnsat += 1
                 break
 
         # end the timer and add to array
@@ -341,10 +363,34 @@ def main():
         probTimes.append((endTime - startTime)*(10**6))
         totalTime += (endTime - startTime)*(10**6)
 
+        # add to exec time
+        problem.execTime = (endTime - startTime)*(10**6)
+
         # if output not supressed, print results
         if suppressOutput == False:
             test = writeOutput(problem, problemRes)
 
+        # write to csv file
+        csvFile.write(str(problem.probNumber) + ",")
+        csvFile.write(str(problem.numVariables) + ",")
+        csvFile.write(str(problem.numClauses) + ",")
+        csvFile.write(str(problem.maxLiterals) + ",")
+        csvFile.write(str(problem.totalLiterals) + ",")
+        csvFile.write(str(problem.myAnswer) + ",")
+        csvFile.write("0,")
+        csvFile.write(str(problem.execTime) + "\n")
+
     print("total time: " + str(totalTime) + "\n")
+
+    # write end of file
+    csvFile.write("2SAT,")
+    csvFile.write("The SenSATional Duo,")
+    csvFile.write(str(len(probList)) + ",")
+    csvFile.write(str(numSat) + ",")
+    csvFile.write(str(numUnsat) + ",")
+    csvFile.write(str(numAnsProv) + ",")
+    csvFile.write(str(numCorrect))
+
+    csvFile.close()
 
 main()
